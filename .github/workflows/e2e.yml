@@ -1,0 +1,38 @@
+name: E2E Smoke Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      custom_event:
+        description: Custom event summary to send to PagerDuty
+        required: false
+        default: Smoke test from GitHub Actions
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun test
+
+  local-action:
+    runs-on: ubuntu-latest
+    needs: unit
+    steps:
+      - uses: actions/checkout@v4
+      - name: Invoke local action
+        uses: ./
+        with:
+          integration-key: ${{ secrets.PAGERDUTY_CHANGE_INTEGRATION_KEY }}
+          custom-event: ${{ inputs.custom_event }}
+
+  published-action:
+    runs-on: ubuntu-latest
+    needs: unit
+    steps:
+      - name: Invoke fork action by branch reference
+        uses: yoshi-taka/pagerduty-change-events-action@feat/node20-bun-modernize
+        with:
+          integration-key: ${{ secrets.PAGERDUTY_CHANGE_INTEGRATION_KEY }}
+          custom-event: ${{ inputs.custom_event }}
